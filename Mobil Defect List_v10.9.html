@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arıza Kayıt Programı</title>
+    <style>
+
+        /* Öneri kutusu stili */
+.suggestions {
+    border: 1px solid #ccc;
+    background-color: grey;
+    position: absolute;
+    z-index: 10;
+    width: calc(100% - 20px);
+    max-height: 150px;
+    overflow-y: auto;
+    display: none;
+}
+.suggestion-item {
+    padding: 5px;
+    cursor: pointer;
+}
+.suggestion-item:hover {
+    background-color: #f2f2f2;
+}
+
+    body {
+      font-family: sans-serif;
+      background-color: #ffffff;
+      color: #000000;
+    }
+
+    /* Filtreleme kutusu ve tablo hizalaması */
+    .filter-container {
+        margin: 15px 0; /* Buton altına boşluk */
+        text-align: left;
+        display: inline-block;
+    }
+    #search-box {
+        width: 100%; /* Tam genişlik */
+        padding: 8px;
+        box-sizing: border-box;
+    }
+
+    .container {
+      margin: 0 auto;
+      max-width: 100%;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+            /* Başlık stili */
+    .page-title {
+        font-size: 20px; /* Küçültülmüş font boyutu */
+        font-weight: bold;
+        text-align: left;
+        margin-top: 0;
+        margin-bottom: 15px;
+    }
+
+    .developer-info {
+      font-size: 12px;
+      text-align: right;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 5px;
+    }
+
+    .form-group, .search-group {
+      margin-bottom: 10px;
+    }
+
+    .form-control {
+      padding: 10px;
+      border: 1px solid #ccc;
+      width: 100%;
+      background-color: #ffffff;
+      color: #000000;
+    }
+
+        .edit-textarea {
+    font-size: 14px;
+    resize: none;
+    padding: 5px;
+    box-sizing: border-box;
+    line-height: 1.2;
+}
+
+    .btn {
+      background-color: #000;
+      color: #fff;
+      padding: 8px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 5px;
+    }
+
+    .btn-primary {
+      background-color: #44df00;
+      color: #fff;
+    }
+
+            /* Butonlar için stil */
+    .button-container {
+        margin-top: 10px;
+        margin-bottom: 10px;
+    }
+    .button-container .btn {
+margin-right: 2px; /* Butonlar arasında boşluk */
+padding: 3px 4px; /* Yükseklik ve genişlik için daha az dolgu */
+font-size: 9px; /* Daha küçük font boyutu */
+    }
+
+    .records {
+        margin-top: 10px;
+        width: 100%;
+        border-collapse: collapse;
+        overflow-x: auto;
+        display: block;
+    }
+    .records th, .records td {
+        border: 1px solid #ccc;
+        padding: 10px;
+        text-align: left;
+    /* white-space: nowrap;  Metni tek satırda tut */
+    white-space: normal;
+
+    }
+    .records th {
+        font-weight: bold;
+        background-color: #f2f2f2;
+    }
+
+    .editable {
+      cursor: pointer;
+    }
+
+    .edit-textarea {
+      width: 100%;
+      padding: 5px;
+      box-sizing: border-box;
+    }
+
+    .dark-theme {
+      background-color: #121212;
+      color: #ffffff;
+    }
+
+    .dark-theme .form-control {
+      background-color: #333333;
+      color: #ffffff;
+      border: 1px solid #555555;
+    }
+
+    .dark-theme .records th {
+      background-color: #333333;
+    }
+
+    .dark-theme .btn {
+      background-color: #555555;
+    }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="developer-info">
+        <div>Geliştirici: ovar@thy.com</div>
+        <button id="theme-toggle" class="btn">Karanlık Tema</button>
+    </div>
+    <!-- Başlığı sola hizalayarak küçülttük -->
+    <h1 class="page-title">Arıza Kayıt Programı</h1>
+
+
+
+    <form id="record-form" method="post">
+
+
+
+
+        <div class="form-group">
+            <!--<th><label for="problem">ARIZA TÜRÜ:</label>-->
+            <div style="display: flex; flex-direction: column;"> <!-- Flexbox ile hizalama -->
+                <div class="button-container">
+                    <button type="button" class="btn" onclick="addToProblem('DAMAGED')">DAMAGED</button>
+                    <button type="button" class="btn" onclick="addToProblem('LOOSE')">LOOSE</button>
+                    <button type="button" class="btn" onclick="addToProblem('DIRTY')">DIRTY</button>
+                    <button type="button" class="btn" onclick="addToProblem('DISLOCATED')">DISLOCATED</button>
+                </div>
+                <textarea name="problem" class="form-control" id="problem" rows="1" placeholder="Arıza türünü giriniz..."></textarea>
+            </div>
+        </div>
+
+
+
+        <div class="form-group">
+            <!--<label for="location">KOLTUK NUMARASI <i style="font-size: 10px;">(Örnek: 1A 2A 3A..)</i></label>-->
+            <textarea name="location" class="form-control" id="location" rows="1" placeholder="Koltuk numarasını giriniz..."></textarea>
+        </div>
+
+
+
+        <button type="submit" class="btn btn-primary">Kaydet</button>
+        <button type="button" class="btn btn-danger" id="clear-data">Verileri Sil</button>
+        <button type="button" class="btn btn-secondary" id="download-csv">Dosyaya kaydet</button>
+
+
+
+    </form>
+
+    <!-- Filtreleme kutusunu formun altına ekliyoruz -->
+    <div class="filter-container">
+        <input type="text" id="search-box" class="form-control" placeholder="Arama yap...">
+    </div>
+
+    <table class="records" id="records-container">
+        <thead>
+        <tr>
+            <th>Arıza Türü:</th>
+            <th>Koltuk Numarası:</th>
+            <th>Miktar:</th>
+        </tr>
+        </thead>
+        <tbody>
+        <!-- Records will be displayed here -->
+        </tbody>
+    </table>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+
+    $(document).ready(function() {
+       const problemSuggestions = [
+
+    "LIFE VEST DOORS ARE DAMAGED",
+    "MONITOR SHROUDS ARE DAMAGED",
+    "CLOSE TYPE ESCUTCHEONS ARE DAMAGED",
+    "OPEN TYPE ESCUTCHEONS ARE DAMAGED",
+    "FOODTRAYS ARE DAMAGED",
+    "IAT FOODTRAYS ARE DAMAGED ASSY",
+    "IAT FOODTRAY OUTER LEAF DAMAGED",
+    "IAT FOODTRAY INNER LEAF DAMAGED",
+    "IAT FOODTRAY INNER COVER CAVITY COVER IS MISSING",
+    "LIFE VEST STRAPS ARE DAMAGED",
+    "LIFE VEST STRAP DISLOCATED",
+    "IAT PASS SEAT GROMMETS ARE DAMAGED",
+    "SEATPANS ARE DAMAGED",
+    "RECLINES ARE NOT WORKING PROPERLY",
+    "BUMPERS ARE DAMAGED",
+    "SPREADER REAR COVERS ARE DAMAGED",
+    "SPREADER REAR COVER MISSING",
+    "LIT POCKET CLAMPS ARE DAMAGED",
+    "FOODTRAY WASHER IS MISSING",
+    "FOODTRAY LATCHES ARE DAMAGED",
+    "FOODTRAY SHROUDS ARE DEBONDED",
+    "MONITOR TILTS ARE DAMAGED",
+    "MONITOR HINGES ARE DAMAGED",
+    "LIT POCKET SPRINGS ARE DAMAGED",
+    "IAT ARMCAP HINGES ARE DAMAGED",
+    "IAT ARMREST INNER AND OUTER SHROUD IS DAMAGED",
+    "IAT BUMPER DAMAGED", "ARMCAPS ARE DAMAGED",
+    "BUMPER IFE SHROUDS ARE DAMAGED",
+    "FOODTRAY LATCHES SCREWS ARE LOOSE",
+    "ESCUTCHEON IS DIRTY",
+    "IAT MONITOR ARM PLUG IS MISSING",
+    "IAT MONITOR ARM ATTACHMENT SCREWS ARE LOOSE",
+    "IAT FOODTRAYS NEED TO BE ALIGMENT",
+    "ARMREST UNDER PLUGS ARE MISSING",
+    "FOODTRAY SLIDES NEED TO BE LUBRICATION",
+    "BACKRESTS NEED TO BE ALIGNMENT",
+    "MONITOR TILTS ARE DAMAGED",
+    "CENTER CONSOLE INNER PANELS ARE DAMAGED",
+    "BUMPERS ARE DAMAGED",
+    "FOIL OUTER COVERS ARE DAMAGED",
+    "FOIL INNER COVERS ARE DAMAGED",
+    "CENTER CONSOLE FRONT ESCUTCHEON IS DISLOCATED",
+    "ESCUTCHEON IS DISLOCATED",
+    "CENTER CONSOLE FRONT ESCUTCHEONS ARE DAMAGED",
+    "FOODTRAY STOPPERS ARE DAMAGED",
+    "FOODTRAY STOPPER PLUGS ARE DAMAGED",
+    "CENTER CONSOLE SIDE COVER IS DAMAGED",
+    "ARMREST INNER PANELS ARE DAMAGED",
+    "ARMREST OUTER COVERS ARE DAMAGED",
+    "ARMRESTS ARE NOT LOCKING",
+    "COCKTAIL TABLE FRONT COVERS ARE DAMAGED",
+    "COCKTAIL TABLE INNER COVER IS DISLOCATED",
+    "COCKTAIL TABLE INNER COVERS ARE MISSING",
+    "SEB BOX'S SCREWS ARE MISSING",
+    "MONITOR LOWER SCREWS ARE MISSING",
+    "LIFE VEST DOORS ARE DAMAGED",
+    "MONITOR UPPER HINGES ARE DAMAGED",
+    "CENTER CONSOLE REAR COVERS ARE DAMAGED",
+    "ESCUTCHEONS ARE DAMAGED",
+    "HEADREST HINGES ARE DAMAGED",
+    "LITERATURE POCKETS ARE DEFORMED",
+    "ESCUTCHEON HINGE COVERS ARE DAMAGED", "CABLE STEELS ARE DAMAGED", "FOODTRAY HINGES ARE DAMAGED", "FOODTRAY EDGE PROTECTIONS ARE MISSING", "LEGREST ATTACHMENT BRACKETS ARE DAMAGED", "FOODTRAY UPPER PANELS ARE DAMAGED", "FOODTRAY LOWER COVERS ARE DAMAGED", "LEGREST EXTENSIONS ARE NOT WORKING PROPERLY", "RECLINE IS NOT WORKING PROPERLY", "EMERGENCY UNLOCKING PANEL IS DAMAGED", "FOODTRAY STRIPS ARE DEFORMED", "MONITOR STRIP IS DAMAGED", "SEATPANS ARE DAMAGED", "FOOTREST SIDE COVER IS DAMAGED", "1 TO 4 ROW'S LEGRESTS ARE LOOSE", "1 TO 4 ROW'S BAGGAGE BAR ARE LOOSE", "1 TO 4 ROWS PASS SEAT FOODTRAYS ARE LOOSE", "1 TO 4 ROWS PASS SEAT ARMCAPS ARE DIRTY", "1 TO 4 ROWS PASS SEAT MONITOR ARMS ARE LOOSE", "1 TO 4 ROW'S FOODTRAYS NEED TO BE ALLIGNMENT", "1 TO 4 ROWS PASS SEAT FOOTRESTS ARE LOOSE", "1 TO 4 ROW'S AISLE SIDE ARMREST PANELS ARE DIRTY"
+
+
+    ];
+
+       const problemField = $("#problem");
+       const suggestionsBox = $("<div class='suggestions'></div>").insertAfter(problemField);
+
+function showSuggestions(input) {
+    const filteredSuggestions = problemSuggestions.filter(suggestion =>
+        suggestion.toUpperCase().includes(input.toUpperCase())  // Bu satır değiştirildi
+    );
+
+    suggestionsBox.empty();
+
+    if (filteredSuggestions.length > 0 && input) {
+        const offset = problemField.offset();
+        suggestionsBox.css({
+            top: offset.top + problemField.outerHeight(),
+            left: offset.left
+        });
+
+        filteredSuggestions.forEach(suggestion => {
+            const item = $("<div class='suggestion-item'></div>").text(suggestion);
+            item.on("click", function() {
+                problemField.val(suggestion);
+                suggestionsBox.hide();
+            });
+            suggestionsBox.append(item);
+        });
+
+        suggestionsBox.show();
+    } else {
+        suggestionsBox.hide();
+    }
+}
+
+
+       problemField.on("input", function() {
+           showSuggestions($(this).val());
+       });
+
+       $(document).on("click", function(e) {
+           if (!$(e.target).closest(".suggestions, #problem").length) {
+               suggestionsBox.hide();
+           }
+       });
+   });
+
+   function addToProblem(value) {
+const problemField = $("#problem");
+const locationField = $("#location");
+const currentText = problemField.val();
+problemField.val(currentText ? `${currentText} ${value}` : value);
+locationField.focus(); // Textarea'ya odaklan. eğer arıza textboxındaa focus istiyosan problemField.focus(); yapacaksın
+}
+
+$(document).ready(function() {
+$("#problem, #location").on("input", function() {
+this.value = this.value.toUpperCase().replace(/\s+/g, ' '); // Büyük harf ve tek boşluk
+});
+var records = JSON.parse(localStorage.getItem("records")) || [];
+
+
+
+function loadPage() {
+var recordsContainer = $("#records-container tbody");
+recordsContainer.html("");
+
+
+
+records.forEach((record, index) => {
+var row = $("<tr class='record'></tr>");
+var problemCell = $("<td class='editable'></td>").text(record.problem);
+var locationCell = $("<td class='editable'></td>").text(record.location);
+var quantityCell = $("<td class='editable'></td>").text(calculateQuantity(record.location));
+
+problemCell.on("click", function() { editCell($(this), 'problem', index); });
+locationCell.on("click", function() { editCell($(this), 'location', index, true); });
+
+row.append(problemCell);
+row.append(locationCell);
+row.append(quantityCell); // Miktar hücresini ekle
+
+recordsContainer.append(row);
+});
+}
+
+//buraya yapıştır
+function checkDuplicates(locations) {
+let uniqueLocations = [...new Set(locations)];
+if (uniqueLocations.length !== locations.length) {
+let duplicates = locations.filter((item, index) => locations.indexOf(item) !== index);
+alert("Mükerrer koltuk numaraları bulundu: " + duplicates.join(", "));
+}
+return uniqueLocations.join(" ");
+}
+
+
+
+function editCell(cell, field, index, isLocation = false) {
+if (cell.find("textarea").length > 0) return;
+
+var originalValue = cell.text();
+var textarea = $("<textarea class='edit-textarea'></textarea>").val(originalValue);
+
+textarea.css({
+width: "250px",
+height: "50px"
+});
+
+cell.html(textarea);
+textarea.focus();
+
+textarea.on("input", function() {
+this.value = this.value.toUpperCase().replace(/\s+/g, ' ').trimStart();
+});
+
+textarea.on("blur", function() {
+var newValue = textarea.val().trim();
+records[index][field] = newValue;
+
+if (isLocation) {
+var locations = newValue.split(" ").sort(function(a, b) {
+return a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'});
+});
+records[index].location = checkDuplicates(locations);
+}
+
+localStorage.setItem("records", JSON.stringify(records));
+loadPage();
+});
+
+textarea.on("keypress", function(e) {
+if (e.which === 13) {
+e.preventDefault();
+textarea.blur();
+}
+});
+}
+
+function downloadCSV() {
+var csvContent = "\uFEFF" + ["Arıza Türü,Koltuk Numarası,Miktar"].join(",") + "\n"; // UTF-8 BOM ekledik
+
+records.forEach(function(record) {
+var row = [record.problem, record.location, calculateQuantity(record.location)].join(","); // Miktar ekleniyor
+csvContent += row + "\n";
+});
+
+// CSV içeriğini Blob formatında oluşturuyoruz
+var blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+var url = URL.createObjectURL(blob);
+
+// Dosya indirme bağlantısı oluşturuyoruz
+var link = document.createElement("a");
+link.setAttribute("href", url);
+link.setAttribute("download", "ariza_kayitlari.csv");
+document.body.appendChild(link);
+
+link.click();
+
+// İndirme tamamlandıktan sonra bağlantıyı kaldırıyoruz
+document.body.removeChild(link);
+URL.revokeObjectURL(url); // Bellekte yer kaplamaması için URL'yi serbest bırakıyoruz
+
+// Dosya paylaşım menüsünü açmayı deneyin (tarayıcı destekliyorsa)
+if (navigator.share) {
+navigator.share({
+title: "Arıza Kayıtları",
+text: "Arıza Kayıtlarını paylaşın.",
+files: [new File([blob], "ariza_kayitlari.csv", { type: "text/csv" })]
+}).catch(error => console.log("Paylaşma işlemi başarısız:", error));
+} else {
+alert("Bu cihaz dosya paylaşımını desteklemiyor.");
+}
+}
+
+$("#download-csv").on("click", downloadCSV);
+
+function filterRecords(query) {
+query = query.toLowerCase();
+$("#records-container tbody tr").each(function() {
+var rowText = $(this).text().toLowerCase();
+$(this).toggle(rowText.includes(query));
+});
+}
+
+$("#search-box").on("input", function() {
+this.value = this.value.toUpperCase();
+filterRecords($(this).val());
+});
+
+
+function calculateQuantity(location) {
+var locations = location.split(" ");
+return locations.length + " EA";
+}
+
+
+
+loadPage();
+
+$("#record-form").on("submit", function(event) {
+event.preventDefault();
+var problem = $("#problem").val();
+var location = $("#location").val().trim();
+
+if (!problem|| !location) {
+alert("Veri girmediniz");
+return;
+}
+
+var locations = location.split(" ").sort(function(a, b) {
+return a.localeCompare(b, undefined, {numeric: true, sensitivity: 'base'});
+});
+
+var sortedLocation = checkDuplicates(locations);
+var record = { problem: problem, location: sortedLocation };
+
+records.push(record);
+localStorage.setItem("records", JSON.stringify(records));
+loadPage();
+
+// Formu temizle
+$("textarea[name='problem']").val("");
+$("textarea[name='location']").val("");
+});
+
+$("#clear-data").on("click", function() {
+if (confirm("Emin misiniz?")) { // Onay penceresi
+localStorage.removeItem("records");
+records = [];
+loadPage();
+}
+});
+
+$("#theme-toggle").on("click", function() {
+$("body").toggleClass("dark-theme");
+$(this).text($(this).text() === "Karanlık Tema" ? "Aydınlık Tema" : "Karanlık Tema");
+});
+});
+</script>
+</body>
+</html>
